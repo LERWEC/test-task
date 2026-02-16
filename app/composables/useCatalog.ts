@@ -1,60 +1,36 @@
 import type { ICatalogItem } from "~/type/catalog";
 import type { IApiProducts } from "~/type/api";
 
-import { useApi } from "./useApi";
-
-export const useCatalog = () => {
-  const api = useApi()
-
+export const useCatalog = async () => {
   const page = ref(1);
-
-  const {
-    data,
-    status,
-    error,
-  } = useLazyAsyncData(
-    'channels',
-    async () => {
-      const response = await api.get<IApiProducts<ICatalogItem>>('/products', {
-        query: {
-          page: page.value
-        },
-      });
-      return response;
-    },
-    {
-      immediate: true,
-      default: () => null,
-      watch: [page],
-    },
-  );
-
   const productsItems = ref<ICatalogItem[]>([]);
   const total = ref(0);
 
+  const { data, error, pending, refresh } = await useFetch<IApiProducts<ICatalogItem>>('/products', {
+    baseURL: useRuntimeConfig().public.apiBase,
+    query: { page },
+    key: () => `products-page-${page.value}`,
+    immediate: true,
+  });
+
   const items = computed(() => productsItems.value ?? []);
-  const loading = computed(() => status.value === 'pending');
   const isLoadingMore = computed(() => total.value > page.value);
 
   watch(
     () => data.value?.products,
     (newData) => {
       if (!newData) return;
-
-      productsItems.value = [
-        ...productsItems.value,
-        ...newData,
-      ];      
-
-      if(data.value?.totalPages) total.value =  data.value?.totalPages
+      productsItems.value = [...productsItems.value, ...newData];
+      if (data.value?.totalPages) total.value = data.value.totalPages;
     },
-    { immediate: true },
+    { immediate: true }
   );
 
-
-  // Загрузить больше
   const loadMore = () => {
-    if(isLoadingMore.value) page.value++
+    if(isLoadingMore.value) {
+      page.value++;
+      refresh();
+    }
   };
 
   return {
@@ -63,9 +39,8 @@ export const useCatalog = () => {
     isLoadingMore,
 
     // State
-    loading,
+    pending,
     error: computed(() => error.value ? 'Произошла ошибка, попробуйте позже' : ''),
-    status,
 
     // Actions - Read
     loadMore,

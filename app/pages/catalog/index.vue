@@ -1,15 +1,15 @@
 <script setup lang="ts">
-const { items, error, loading, isLoadingMore, loadMore } = useCatalog()
+const { items, error, pending, isLoadingMore, loadMore } = await useCatalog()
 </script>
 
 <template>
   <section class="catalog">
     <h2 class="catalog__title">каталог</h2>
-    <div class="catalog__list">
-      <div v-for="item in items" :key="item.id" class="catalog__item">
+    <div v-if="items.length" class="catalog__list">
+      <NuxtLink v-for="item in items" :key="item.id" to="#" class="catalog__item">
         <img src="~/assets/icon/favorite.svg" alt="menu" class="catalog__favorite">
         <div class="catalog__img--wrapper">
-          <nuxt-img
+          <NuxtImg
             :src="item.image"
             :alt="item.name"
             class="catalog__img"
@@ -22,15 +22,15 @@ const { items, error, loading, isLoadingMore, loadMore } = useCatalog()
           </div>
           <p class="catalog__name">{{ item.name }}</p>
         </div>
-      </div>
-  </div>
-  <div v-if="isLoadingMore && !loading" class="catalog__load">
-    <p v-if="error && !loading" class="catalog__error">{{ error }}</p>
-    <button class="catalog__btn" @click="loadMore">
-      Показать еще
-    </button>
-  </div>
-    <p v-else-if="loading" class="catalog__loading">Загрузка...</p>
+      </NuxtLink>
+    </div>
+    <p v-if="pending" class="catalog__loading">Загрузка...</p>
+    <div v-else class="catalog__load">
+      <p v-if="error" class="catalog__error">{{ error }}</p>
+      <button v-if="isLoadingMore" class="catalog__btn" @click="loadMore">
+        Показать еще
+      </button>
+    </div>
   </section>
 </template>
 
@@ -60,6 +60,7 @@ const { items, error, loading, isLoadingMore, loadMore } = useCatalog()
     display: flex;
     flex-direction: column;
     gap: 15px;
+    color: black;
     position: relative;
   }
 
